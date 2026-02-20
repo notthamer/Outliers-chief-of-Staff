@@ -43,9 +43,15 @@ lib/
   store.ts           # In-memory session store (MVP)
 ```
 
+## Deploy to Vercel
+
+1. Push this repo to GitHub
+2. Import the project at [vercel.com/new](https://vercel.com/new)
+3. Add `OPENAI_API_KEY` in Vercel → Project Settings → Environment Variables
+4. Deploy
+
 ## MVP Notes
 
 - Anonymous sessions; no auth
-- In-memory store (sessions lost on restart)
+- File-based session store in `data/sessions/` (ephemeral on Vercel serverless)
 - Desktop-first
-- Add Postgres for production persistence

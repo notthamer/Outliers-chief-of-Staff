@@ -1,9 +1,14 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
+import os from "os";
 import path from "path";
 import type { SessionResult } from "./types";
 
-const DATA_DIR = path.join(process.cwd(), "data", "sessions");
+// Use /tmp on Vercel (read-only fs except /tmp); use data/sessions locally
+const DATA_DIR =
+  process.env.VERCEL
+    ? path.join(os.tmpdir(), "cos-sessions")
+    : path.join(process.cwd(), "data", "sessions");
 
 async function ensureDir() {
   if (!existsSync(DATA_DIR)) {
