@@ -86,10 +86,14 @@ Founder pain points:
 
 export type OutputKey = keyof GeneratedOutputs;
 
+export type StreamingOutputMessage =
+  | { key: OutputKey; chunk: string }
+  | { key: OutputKey; content: string };
+
 export async function* generateOutputsStreaming(
   intake: FounderIntake,
   analysis: AIAnalysis
-): AsyncGenerator<{ key: OutputKey; content: string }> {
+): AsyncGenerator<StreamingOutputMessage> {
   const cc = intake.companyContext;
   const context = `
 Company: ${cc.companyName ? `${cc.companyName} — ` : ""}${cc.stage}, ${cc.teamSize} team, ${cc.revenue} revenue
