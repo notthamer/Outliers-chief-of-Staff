@@ -63,16 +63,17 @@ export async function POST(req: Request) {
         );
 
         for await (const msg of generateOutputsStreaming(intake, analysis)) {
-          if (msg.chunk) {
-            outputs[msg.key] = (outputs[msg.key] ?? "") + msg.chunk;
+          const m = msg as { key: keyof GeneratedOutputs; chunk?: string; content?: string };
+          if (m.chunk) {
+            outputs[m.key] = (outputs[m.key] ?? "") + m.chunk;
             controller.enqueue(
-              encoder.encode(streamLine({ type: "output_chunk", key: msg.key, chunk: msg.chunk }))
+              encoder.encode(streamLine({ type: "output_chunk", key: m.key, chunk: m.chunk }))
             );
           }
-          if (msg.content) {
-            outputs[msg.key] = msg.content;
+          if (m.content) {
+            outputs[m.key] = m.content;
             controller.enqueue(
-              encoder.encode(streamLine({ type: "output", key: msg.key, content: msg.content }))
+              encoder.encode(streamLine({ type: "output", key: m.key, content: m.content }))
             );
           }
         }
