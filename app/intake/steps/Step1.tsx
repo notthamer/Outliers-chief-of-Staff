@@ -109,6 +109,16 @@ export function Step1({ data, onChange }: Step1Props) {
       <p className="text-sm text-[var(--muted)]">
         Help us understand your company stage and structure.
       </p>
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-[var(--foreground)]">Company name (optional)</label>
+        <input
+          type="text"
+          value={data.companyName}
+          onChange={(e) => onChange({ ...data, companyName: e.target.value })}
+          placeholder="e.g. Acme Inc."
+          className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-[var(--foreground)] placeholder-[var(--muted)] focus:border-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--foreground-muted)]/20 transition-colors"
+        />
+      </div>
       <div className="grid gap-6 sm:grid-cols-2">
         <Select
           label="Stage"

@@ -52,6 +52,7 @@ export type OperationalPain =
   | "other";
 
 export interface CompanyContext {
+  companyName: string;
   stage: Stage | "";
   teamSize: TeamSize | "";
   revenue: Revenue | "";

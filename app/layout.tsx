@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${bricolage.variable} ${serif.variable} ${mono.variable}`}>
+    <html lang="en" className={`${bricolage.variable} ${serif.variable} ${mono.variable} bg-[var(--background)]`}>
       <body className="min-h-screen bg-[var(--background)] text-[var(--foreground)] font-sans antialiased">
         {children}
       </body>

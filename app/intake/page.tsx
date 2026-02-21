@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Stepper } from "@/components/Stepper";
 import { GuardrailModal } from "@/components/GuardrailModal";
 import { AnalysisProgress } from "@/components/AnalysisProgress";
+import { OutputCard } from "@/components/OutputCard";
 import { Step1 } from "./steps/Step1";
 import { Step2 } from "./steps/Step2";
 import { Step3 } from "./steps/Step3";
@@ -15,6 +16,7 @@ import type { FounderIntake, SessionResult } from "@/lib/types";
 
 const INITIAL_INTAKE: FounderIntake = {
   companyContext: {
+    companyName: "",
     stage: "",
     teamSize: "",
     revenue: "",
@@ -42,6 +44,7 @@ const INITIAL_INTAKE: FounderIntake = {
 
 const SAMPLE_INTAKE: FounderIntake = {
   companyContext: {
+    companyName: "RevOps AI",
     stage: "series-a",
     teamSize: "16-30",
     revenue: "2m-10m",
@@ -49,7 +52,7 @@ const SAMPLE_INTAKE: FounderIntake = {
     founderType: "co-founders",
     industry: "saas",
     workModel: "hybrid",
-    location: "Dubai",
+    location: "Riyadh",
     hiringTimeline: "1-3-months",
     strategicInitiatives: "Series B raise, MENA expansion, product-market fit scaling",
   },
@@ -87,7 +90,10 @@ export default function IntakePage() {
   const [intake, setIntake] = useState<FounderIntake>(INITIAL_INTAKE);
   const [formKey, setFormKey] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
   const [analysisStep, setAnalysisStep] = useState(0);
+  const [streamingLabel, setStreamingLabel] = useState<string | undefined>();
+  const [streamingOutputs, setStreamingOutputs] = useState<Record<string, string>>({});
   const [guardrail, setGuardrail] = useState<{ open: boolean; reason: string }>({
     open: false,
     reason: "",
@@ -106,99 +112,145 @@ export default function IntakePage() {
     else handleGenerate();
   };
 
+  const OUTPUT_LABELS: Record<string, string> = {
+    roleBrief: "Role Brief",
+    jobDescription: "Job Description",
+    ninetyDayPlan: "90-Day Plan",
+    interviewFramework: "Interview Framework",
+    candidateFit: "Candidate Fit",
+    jobPostingReframe: "Job Posting Reframe",
+  };
+
   const handleGenerate = async (overrideGuardrail = false) => {
     if (guardrail.open && !overrideGuardrail) return;
     if (guardrail.open) setGuardrail({ open: false, reason: "" });
 
     setIsAnalyzing(true);
     setAnalysisStep(0);
+    setStreamingLabel(undefined);
+    setStreamingOutputs({});
 
     try {
-      const stepInterval = setInterval(() => {
-        setAnalysisStep((s) => Math.min(s + 1, 3));
-      }, 8000);
-
-      const res = await fetch("/api/analyze", {
+      const res = await fetch("/api/analyze/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ intake, overrideGuardrail }),
       });
-
-      clearInterval(stepInterval);
-      setAnalysisStep(3);
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Analysis failed");
       }
 
-      const { id, guardrailTriggered, reason, result } = await res.json();
-      if (guardrailTriggered && !overrideGuardrail) {
-        setGuardrail({
-          open: true,
-          reason:
-            reason ||
-            "The AI recommends caution. Your company may not be ready for a Chief of Staff. Consider an Executive Assistant or building foundational operations first.",
-        });
-        setIsAnalyzing(false);
-        return;
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let lastResult: SessionResult | null = null;
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+              const msg = JSON.parse(line) as {
+                type: string;
+                reason?: string;
+                key?: string;
+                chunk?: string;
+                id?: string;
+                result?: SessionResult;
+              };
+              if (msg.type === "output_chunk" && msg.key && msg.chunk) {
+                setStreamingOutputs((prev) => ({
+                  ...prev,
+                  [msg.key!]: (prev[msg.key!] ?? "") + msg.chunk,
+                }));
+              }
+              if (msg.type === "guardrail") {
+                setGuardrail({
+                  open: true,
+                  reason:
+                    msg.reason ||
+                    "The AI recommends caution. Your company may not be ready for a Chief of Staff.",
+                });
+                setIsAnalyzing(false);
+                return;
+              }
+              if (msg.type === "analysis") {
+                setStreamingLabel("Role Brief");
+              }
+              if (msg.type === "output" && msg.key) {
+                setStreamingLabel(OUTPUT_LABELS[msg.key] ?? msg.key);
+              }
+              if (msg.type === "done" && msg.id && msg.result) {
+                lastResult = msg.result;
+              }
+            } catch {
+              // skip malformed lines
+            }
+          }
+        }
       }
 
-      if (result && typeof window !== "undefined") {
+      if (lastResult && typeof window !== "undefined") {
         try {
-          sessionStorage.setItem(`cos-result-${id}`, JSON.stringify(result));
-          (window as unknown as { __COS_PENDING_RESULT__?: unknown }).__COS_PENDING_RESULT__ = result;
+          sessionStorage.setItem(`cos-result-${lastResult.id}`, JSON.stringify(lastResult));
+          (window as unknown as { __COS_PENDING_RESULT__?: unknown }).__COS_PENDING_RESULT__ = lastResult;
         } catch {
           // storage may be full
         }
+        await new Promise((r) => setTimeout(r, 100));
+        router.push(`/results/${lastResult.id}`);
+      } else {
+        throw new Error("No result received");
       }
-      // Small delay so storage and state are flushed before navigation
-      await new Promise((r) => setTimeout(r, 100));
-      router.push(`/results/${id}`);
     } catch (e) {
       setIsAnalyzing(false);
+      setStreamingLabel(undefined);
       const msg = e instanceof Error ? e.message : "Something went wrong.";
-      if (typeof window !== "undefined" && window.confirm(`${msg}\n\nShow demo results instead?`)) {
-        const demoId = "demo-" + Date.now();
-        const demoResult: SessionResult = {
-          id: demoId,
-          intake: SAMPLE_INTAKE,
-          analysis: {
-            recommended_title: "Chief of Staff",
-            archetype: "Strategic Partner",
-            confidence_score: "8",
-            role_exists_reason: "Founder is bottleneck on strategic and operational work. Board/investor chaos and cross-functional drift indicate need for a strategic partner.",
-            risk_warnings: ["Ensure clear scope to avoid founder dependency"],
-            primary_focus: ["Investor/board reporting", "OKR cadence", "Leadership alignment"],
-            secondary_focus: ["Decision log", "Operational cadence"],
-            founder_dependency_risk: "Medium – mitigate with clear ownership boundaries",
-            organizational_maturity_score: "6",
-          },
-          outputs: {
-            roleBrief: "## Role Brief\n\n**Why this role exists:** The founder is the bottleneck for strategic decisions, investor relations, and cross-functional alignment. A Chief of Staff can own the operational layer and free the founder for product and strategy.\n\n**Why now:** Series A stage with formal board, 16–30 team, and clear pain around investor chaos and execution drift.\n\n**What success looks like:** Board packs ready on time. Weekly leadership sync in place. OKR cadence running. Founder reclaims 20%+ of time.\n\n**What it is NOT:** Not an EA. Not a COO. Strategic partner with execution ownership.",
-            jobDescription: "## Chief of Staff – Job Description\n\n**Company:** Series A startup, 16–30 team.\n\n**Role mandate:** Own investor reporting, board prep, leadership cadence, and cross-functional alignment. Report to founder.\n\n**Key responsibilities:**\n- Build and maintain investor reporting system\n- Own board pack process and materials\n- Run weekly leadership sync\n- Implement OKR cadence\n- Create decision log\n\n**Success metrics:** Board satisfaction, meeting cadence adherence, founder time reclaimed.",
-            ninetyDayPlan: "## 90-Day Plan\n\n**Month 1:** Build investor reporting system. Implement board pack template. Establish weekly leadership sync.\n\n**Month 2:** Launch OKR cadence. Create decision log. Refine board process.\n\n**Month 3:** Hand off routine investor comms. Optimize cadences. Measure founder time reclaimed.",
-            interviewFramework: "## Interview Framework\n\n**Behavioral:** Tell me about a time you built a process from scratch. How do you handle conflicting priorities? Describe a difficult stakeholder conversation.\n\n**Execution:** Draft a board pack outline. Design a weekly leadership meeting agenda.\n\n**Strategic:** How would you approach OKR implementation at a 20-person company?",
-            candidateFit: "## Ideal Candidate Profile\n\n**Background:** Consulting or operator with 5–8 years experience. Ex-scaleup or startup generalist. Strong on process and stakeholder management.\n\n**Skills:** Board reporting, OKRs, meeting design, executive communication.\n\n**Red flags:** Pure EA background. No strategic work. Needs heavy direction.",
-          },
-          guardrailTriggered: false,
-          createdAt: new Date().toISOString(),
-        };
-        try {
-          sessionStorage.setItem(`cos-result-${demoId}`, JSON.stringify(demoResult));
-          (window as unknown as { __COS_PENDING_RESULT__?: unknown }).__COS_PENDING_RESULT__ = demoResult;
-        } catch {}
-        router.push(`/results/${demoId}`);
-      } else {
-        alert(msg);
-      }
+      alert(msg);
     }
   };
 
+  const STREAMING_SECTIONS = [
+    { id: "role-brief", title: "Role Brief", key: "roleBrief" },
+    { id: "job-description", title: "Job Description", key: "jobDescription" },
+    { id: "ninety-day-plan", title: "90-Day Plan", key: "ninetyDayPlan" },
+    { id: "interview-framework", title: "Interview Framework", key: "interviewFramework" },
+    { id: "candidate-fit", title: "Candidate Fit", key: "candidateFit" },
+    { id: "job-posting-reframe", title: "Job Posting Reframe", key: "jobPostingReframe" },
+  ];
+
   if (isAnalyzing) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-16">
-        <AnalysisProgress currentStep={analysisStep} />
+      <div className="mx-auto max-w-[720px] px-6 py-16">
+        <Link
+          href="/"
+          className="mb-8 inline-block text-sm font-medium text-[var(--foreground-muted)] transition-colors hover:text-[var(--foreground)]"
+        >
+          ← Outliers
+        </Link>
+        <AnalysisProgress currentStep={analysisStep} streamingLabel={streamingLabel} />
+        <div className="mt-12 space-y-8">
+          {STREAMING_SECTIONS.map((section) => {
+            const content = streamingOutputs[section.key] ?? "";
+            if (!content && streamingLabel !== OUTPUT_LABELS[section.key]) return null;
+            return (
+              <OutputCard
+                key={section.id}
+                id={section.id}
+                title={section.title}
+                content={content}
+                streaming={streamingLabel === OUTPUT_LABELS[section.key]}
+              />
+            );
+          })}
+        </div>
       </div>
     );
   }
@@ -206,44 +258,11 @@ export default function IntakePage() {
   const fillSample = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIntake(JSON.parse(JSON.stringify(SAMPLE_INTAKE)));
+    const sample = JSON.parse(JSON.stringify(SAMPLE_INTAKE)) as FounderIntake;
+    setIntake(sample);
     setStep(1);
     setFormKey((k) => k + 1);
-  };
-
-  const skipToDemoResults = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const demoId = "demo-" + Date.now();
-    const demoResult: SessionResult = {
-      id: demoId,
-      intake: SAMPLE_INTAKE,
-      analysis: {
-        recommended_title: "Chief of Staff",
-        archetype: "Strategic Partner",
-        confidence_score: "8",
-        role_exists_reason: "Founder is bottleneck on strategic and operational work.",
-        risk_warnings: [],
-        primary_focus: ["Investor/board reporting", "OKR cadence"],
-        secondary_focus: ["Decision log", "Operational cadence"],
-        founder_dependency_risk: "Medium",
-        organizational_maturity_score: "6",
-      },
-      outputs: {
-        roleBrief: "## Role Brief\n\n**Why this role exists:** The founder is the bottleneck for strategic decisions and cross-functional alignment.\n\n**Why now:** Series A stage with clear pain around investor chaos and execution drift.\n\n**What success looks like:** Board packs ready. Weekly leadership sync. OKR cadence running.\n\n**What it is NOT:** Not an EA. Strategic partner with execution ownership.",
-        jobDescription: "## Chief of Staff – Job Description\n\n**Role mandate:** Own investor reporting, board prep, leadership cadence. Report to founder.\n\n**Key responsibilities:** Build investor reporting system, run weekly leadership sync, implement OKR cadence.\n\n**Success metrics:** Board satisfaction, meeting cadence adherence.",
-        ninetyDayPlan: "## 90-Day Plan\n\n**Month 1:** Build investor reporting system. Establish weekly leadership sync.\n\n**Month 2:** Launch OKR cadence. Create decision log.\n\n**Month 3:** Optimize cadences. Measure founder time reclaimed.",
-        interviewFramework: "## Interview Framework\n\n**Behavioral:** Tell me about a time you built a process from scratch. How do you handle conflicting priorities?\n\n**Execution:** Draft a board pack outline. Design a weekly leadership meeting agenda.",
-        candidateFit: "## Ideal Candidate Profile\n\n**Background:** Consulting or operator, 5–8 years. Ex-scaleup or startup generalist.\n\n**Skills:** Board reporting, OKRs, meeting design, executive communication.",
-      },
-      guardrailTriggered: false,
-      createdAt: new Date().toISOString(),
-    };
-    try {
-      sessionStorage.setItem(`cos-result-${demoId}`, JSON.stringify(demoResult));
-      (window as unknown as { __COS_PENDING_RESULT__?: unknown }).__COS_PENDING_RESULT__ = demoResult;
-    } catch {}
-    router.push(`/results/${demoId}`);
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   };
 
   return (
@@ -255,32 +274,26 @@ export default function IntakePage() {
         >
           ← Outliers
         </Link>
-        <div className="mb-6 space-y-3 rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3">
+        <div
+          id="testing-section"
+          className="mb-6 space-y-3 rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3"
+        >
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-sm font-medium text-[var(--foreground-muted)]">Testing</span>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={fillSample}
-                className="rounded-lg bg-[var(--foreground)] px-3 py-1.5 text-sm font-medium text-[var(--background)] hover:bg-[var(--foreground-muted)]"
-              >
-                Fill: Chief of Staff
-              </button>
-              <button
-                type="button"
-                onClick={skipToDemoResults}
-                className="rounded-lg border border-[var(--foreground-muted)] px-3 py-1.5 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--card-hover)]"
-              >
-                Skip to demo results
-              </button>
-            </div>
+            <span className="text-sm font-medium text-[var(--foreground)]">Testing</span>
+            <button
+              type="button"
+              onClick={fillSample}
+              className="cursor-pointer rounded-lg bg-[var(--foreground)] px-3 py-1.5 text-sm font-medium text-[var(--background)] transition-colors hover:bg-[var(--foreground-muted)]"
+            >
+              Fill: Chief of Staff
+            </button>
           </div>
           <p className="text-xs text-[var(--foreground-muted)]">
-            &quot;Fill&quot; populates the form. &quot;Skip to demo&quot; bypasses the API and shows sample results immediately.
+            &quot;Fill&quot; populates the form with sample data.
           </p>
         </div>
         <Stepper currentStep={step} />
-        <div key={formKey} className="mt-14">
+        <div ref={formRef} key={formKey} className="mt-14">
           {step === 1 && (
             <Step1
               data={intake.companyContext}

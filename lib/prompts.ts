@@ -72,6 +72,7 @@ export function buildUserPrompt(intake: FounderIntake): string {
   };
 
   return `## Company Context
+- Company name: ${companyContext.companyName || "Not specified"}
 - Stage: ${companyContext.stage || "Not specified"}
 - Team size: ${companyContext.teamSize || "Not specified"}
 - Revenue: ${companyContext.revenue || "Not specified"}

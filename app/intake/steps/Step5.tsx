@@ -52,6 +52,7 @@ export function Step5({ intake }: Step5Props) {
         <div>
           <h3 className="text-sm font-medium text-[var(--muted)]">Company context</h3>
           <p className="mt-1 text-sm text-[var(--foreground)]">
+            {companyContext.companyName && `${companyContext.companyName} · `}
             {companyContext.stage || "—"}, {companyContext.teamSize || "—"} team,{" "}
             {companyContext.revenue || "—"} revenue, {companyContext.boardComplexity || "—"} board,{" "}
             {companyContext.founderType || "—"}
