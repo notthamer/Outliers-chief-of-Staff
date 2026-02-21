@@ -23,6 +23,22 @@ export type FounderType =
   | "first-time"
   | "repeat";
 
+export type Industry =
+  | "fintech"
+  | "healthtech"
+  | "saas"
+  | "ecommerce"
+  | "marketplace"
+  | "ai-ml"
+  | "climate"
+  | "edtech"
+  | "proptech"
+  | "other";
+
+export type WorkModel = "remote" | "hybrid" | "onsite";
+
+export type HiringTimeline = "urgent" | "1-3-months" | "3-6-months" | "6-plus-months";
+
 export type OperationalPain =
   | "investor-chaos"
   | "cross-functional-drift"
@@ -41,9 +57,17 @@ export interface CompanyContext {
   revenue: Revenue | "";
   boardComplexity: BoardComplexity | "";
   founderType: FounderType | "";
+  industry: Industry | "";
+  workModel: WorkModel | "";
+  location: string;
+  hiringTimeline: HiringTimeline | "";
+  strategicInitiatives: string;
 }
 
 export interface FreeTextAnswers {
+  startupDescription: string;
+  problemSolving: string;
+  companyVision: string;
   typicalWeek: string;
   chaoticNow: string;
   immediateFix: string;

@@ -20,9 +20,17 @@ const INITIAL_INTAKE: FounderIntake = {
     revenue: "",
     boardComplexity: "",
     founderType: "",
+    industry: "",
+    workModel: "",
+    location: "",
+    hiringTimeline: "",
+    strategicInitiatives: "",
   },
   operationalPain: [],
   freeText: {
+    startupDescription: "",
+    problemSolving: "",
+    companyVision: "",
     typicalWeek: "",
     chaoticNow: "",
     immediateFix: "",
@@ -39,6 +47,11 @@ const SAMPLE_INTAKE: FounderIntake = {
     revenue: "2m-10m",
     boardComplexity: "formal",
     founderType: "co-founders",
+    industry: "saas",
+    workModel: "hybrid",
+    location: "Dubai",
+    hiringTimeline: "1-3-months",
+    strategicInitiatives: "Series B raise, MENA expansion, product-market fit scaling",
   },
   operationalPain: [
     "investor-chaos",
@@ -48,6 +61,12 @@ const SAMPLE_INTAKE: FounderIntake = {
     "board-reporting",
   ],
   freeText: {
+    startupDescription:
+      "B2B SaaS platform for revenue operations. We help Series A–B companies automate their sales ops, pipeline management, and forecasting. 50+ customers, mostly in fintech and healthtech.",
+    problemSolving:
+      "Revenue teams waste 20+ hours a week on manual pipeline updates and broken forecasts. We automate the data flow so they can focus on selling.",
+    companyVision:
+      "Become the default revenue operations layer for mid-market B2B. Expand to 500+ customers and establish category leadership in MENA.",
     typicalWeek:
       "Monday is usually back-to-back meetings—investor updates, team 1:1s, and board prep. Tuesday I focus on product and strategy. Wednesday is often fundraising or partnership calls. Thursday I try to block for deep work but it rarely happens. Friday is catch-up and firefighting. I'm in the weeds on everything—hiring, ops, product decisions, investor relations. No real structure.",
     chaoticNow:
@@ -58,26 +77,6 @@ const SAMPLE_INTAKE: FounderIntake = {
       "Board updates—I never feel prepared and we always get surprised by questions. Performance conversations with underperformers. Saying no to investors who want more of my time. Delivering bad news to the team about runway or pivots. Mediating conflicts between co-founders or senior hires.",
     bottleneck:
       "Every strategic decision flows through me. Hiring approvals, partnership terms, product direction, pricing. I'm the only one who can synthesize across functions. Investor relations and board management take 20% of my time. No one else owns the 'glue' work between teams. I can't delegate because there's no one trusted to run the operational layer.",
-  },
-  menaContext: true,
-};
-
-// Sample that triggers alternative role (EA/Ops) — for testing Job Posting Reframe
-const SAMPLE_ALTERNATIVE_INTAKE: FounderIntake = {
-  companyContext: {
-    stage: "seed",
-    teamSize: "1-5",
-    revenue: "0-500k",
-    boardComplexity: "informal",
-    founderType: "solo",
-  },
-  operationalPain: ["founder-time", "execution-bottleneck"],
-  freeText: {
-    typicalWeek: "I'm doing everything—product, sales, hiring, admin. No structure. Calendar is chaos.",
-    chaoticNow: "Can't keep up with emails. Meetings run over. No one manages my calendar or travel.",
-    immediateFix: "Someone to own my calendar, travel, and basic admin. Gatekeep my time.",
-    dreadedConversations: "Saying no to meetings. Chasing people for updates.",
-    bottleneck: "Admin and coordination. I need an EA, not a strategist.",
   },
   menaContext: true,
 };
@@ -212,14 +211,6 @@ export default function IntakePage() {
     setFormKey((k) => k + 1);
   };
 
-  const fillAlternativeSample = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIntake(JSON.parse(JSON.stringify(SAMPLE_ALTERNATIVE_INTAKE)));
-    setStep(1);
-    setFormKey((k) => k + 1);
-  };
-
   const skipToDemoResults = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -274,13 +265,6 @@ export default function IntakePage() {
                 className="rounded-lg bg-[var(--foreground)] px-3 py-1.5 text-sm font-medium text-[var(--background)] hover:bg-[var(--foreground-muted)]"
               >
                 Fill: Chief of Staff
-              </button>
-              <button
-                type="button"
-                onClick={fillAlternativeSample}
-                className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm font-medium text-[var(--foreground-muted)] hover:bg-[var(--card-hover)] hover:text-[var(--foreground)]"
-              >
-                Fill: Alternative (EA/Ops)
               </button>
               <button
                 type="button"

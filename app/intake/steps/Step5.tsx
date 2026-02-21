@@ -2,6 +2,25 @@
 
 import type { FounderIntake } from "@/lib/types";
 
+const INDUSTRY_LABELS: Record<string, string> = {
+  fintech: "Fintech",
+  healthtech: "Healthtech",
+  saas: "SaaS",
+  ecommerce: "E-commerce",
+  marketplace: "Marketplace",
+  "ai-ml": "AI / ML",
+  climate: "Climate",
+  edtech: "Edtech",
+  proptech: "Proptech",
+  other: "Other",
+};
+const TIMELINE_LABELS: Record<string, string> = {
+  urgent: "ASAP",
+  "1-3-months": "1–3 months",
+  "3-6-months": "3–6 months",
+  "6-plus-months": "6+ months",
+};
+
 const PAIN_LABELS: Record<string, string> = {
   "investor-chaos": "Investor/board chaos",
   "cross-functional-drift": "Cross-functional drift",
@@ -37,7 +56,47 @@ export function Step5({ intake }: Step5Props) {
             {companyContext.revenue || "—"} revenue, {companyContext.boardComplexity || "—"} board,{" "}
             {companyContext.founderType || "—"}
           </p>
+          {(companyContext.industry || companyContext.workModel || companyContext.location || companyContext.hiringTimeline) && (
+            <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+              {[
+                companyContext.industry ? INDUSTRY_LABELS[companyContext.industry] || companyContext.industry : null,
+                companyContext.workModel ? companyContext.workModel.charAt(0).toUpperCase() + companyContext.workModel.slice(1) : null,
+                companyContext.location || null,
+                companyContext.hiringTimeline ? `Hire ${TIMELINE_LABELS[companyContext.hiringTimeline] || companyContext.hiringTimeline}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
+          {companyContext.strategicInitiatives && (
+            <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+              Initiatives: {companyContext.strategicInitiatives}
+            </p>
+          )}
         </div>
+        {(intake.freeText.startupDescription || intake.freeText.problemSolving || intake.freeText.companyVision) && (
+          <div>
+            <h3 className="text-sm font-medium text-[var(--muted)]">Startup & vision</h3>
+            {intake.freeText.startupDescription && (
+              <p className="mt-1 text-sm text-[var(--foreground)]">
+                {intake.freeText.startupDescription.slice(0, 80)}
+                {intake.freeText.startupDescription.length > 80 ? "…" : ""}
+              </p>
+            )}
+            {intake.freeText.problemSolving && (
+              <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                Problem: {intake.freeText.problemSolving.slice(0, 80)}
+                {intake.freeText.problemSolving.length > 80 ? "…" : ""}
+              </p>
+            )}
+            {intake.freeText.companyVision && (
+              <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                Vision: {intake.freeText.companyVision.slice(0, 80)}
+                {intake.freeText.companyVision.length > 80 ? "…" : ""}
+              </p>
+            )}
+          </div>
+        )}
         <div>
           <h3 className="text-sm font-medium text-[var(--muted)]">Operational pain</h3>
           <p className="mt-1 text-sm text-[var(--foreground)]">

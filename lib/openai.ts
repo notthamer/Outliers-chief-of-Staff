@@ -33,14 +33,23 @@ export async function generateOutputs(
   intake: FounderIntake,
   analysis: AIAnalysis
 ): Promise<GeneratedOutputs> {
+  const cc = intake.companyContext;
   const context = `
-Company: ${intake.companyContext.stage}, ${intake.companyContext.teamSize} team, ${intake.companyContext.revenue} revenue
+Company: ${cc.stage}, ${cc.teamSize} team, ${cc.revenue} revenue
+Industry: ${cc.industry || "Not specified"} | Work model: ${cc.workModel || "Not specified"} | Location: ${cc.location || "Not specified"}
+Hiring timeline: ${cc.hiringTimeline || "Not specified"}
+${cc.strategicInitiatives ? `Strategic initiatives: ${cc.strategicInitiatives}` : ""}
+
 Recommended title: ${analysis.recommended_title}
 Archetype: ${analysis.archetype}
 Primary focus: ${(analysis.primary_focus ?? []).join(", ")}
 Secondary focus: ${(analysis.secondary_focus ?? []).join(", ")}
 Risk warnings: ${(analysis.risk_warnings ?? []).join("; ")}
 Role exists because: ${analysis.role_exists_reason}
+
+Startup: ${(intake.freeText.startupDescription || "").slice(0, 150)}${(intake.freeText.startupDescription || "").length > 150 ? "..." : ""}
+Problem solving: ${(intake.freeText.problemSolving || "").slice(0, 150)}${(intake.freeText.problemSolving || "").length > 150 ? "..." : ""}
+Vision: ${(intake.freeText.companyVision || "").slice(0, 150)}${(intake.freeText.companyVision || "").length > 150 ? "..." : ""}
 
 Founder pain points:
 - Typical week: ${intake.freeText.typicalWeek.slice(0, 300)}...

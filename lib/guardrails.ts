@@ -29,6 +29,10 @@ export function checkGuardrails(
   }
 
   const hasStrategicInitiatives =
+    (intake.freeText.startupDescription ?? "").trim().length > 50 ||
+    (intake.freeText.problemSolving ?? "").trim().length > 50 ||
+    (intake.freeText.companyVision ?? "").trim().length > 50 ||
+    (intake.companyContext.strategicInitiatives ?? "").trim().length > 20 ||
     intake.operationalPain.length > 0 ||
     intake.operationalPain.includes("strategic-clarity") ||
     intake.operationalPain.includes("execution-bottleneck") ||

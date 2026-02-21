@@ -10,6 +10,21 @@ interface Step3Props {
 
 const PROMPTS: { key: keyof FreeTextAnswers; label: string; placeholder: string }[] = [
   {
+    key: "startupDescription",
+    label: "What is your startup about?",
+    placeholder: "Mission, product, market, stage. What do you build and who do you serve?",
+  },
+  {
+    key: "problemSolving",
+    label: "What problem is your company trying to solve?",
+    placeholder: "What pain point or opportunity are you addressing? Who has this problem and why does it matter?",
+  },
+  {
+    key: "companyVision",
+    label: "What's your vision for the company?",
+    placeholder: "Where do you want to be in 3–5 years? What does success look like?",
+  },
+  {
     key: "typicalWeek",
     label: "Describe your typical week.",
     placeholder: "What does a normal week look like? Meetings, decisions, fires to put out…",

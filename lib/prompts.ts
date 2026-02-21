@@ -47,17 +47,55 @@ export function buildUserPrompt(intake: FounderIntake): string {
     .map((p) => painLabels[p] ?? p)
     .join(", ");
 
+  const industryLabels: Record<string, string> = {
+    fintech: "Fintech",
+    healthtech: "Healthtech",
+    saas: "SaaS",
+    ecommerce: "E-commerce",
+    marketplace: "Marketplace",
+    "ai-ml": "AI / ML",
+    climate: "Climate / Clean tech",
+    edtech: "Edtech",
+    proptech: "Proptech",
+    other: "Other",
+  };
+  const workModelLabels: Record<string, string> = {
+    remote: "Remote",
+    hybrid: "Hybrid",
+    onsite: "On-site",
+  };
+  const timelineLabels: Record<string, string> = {
+    urgent: "Urgent (ASAP)",
+    "1-3-months": "1–3 months",
+    "3-6-months": "3–6 months",
+    "6-plus-months": "6+ months",
+  };
+
   return `## Company Context
 - Stage: ${companyContext.stage || "Not specified"}
 - Team size: ${companyContext.teamSize || "Not specified"}
 - Revenue: ${companyContext.revenue || "Not specified"}
 - Board complexity: ${companyContext.boardComplexity || "Not specified"}
 - Founder type: ${companyContext.founderType || "Not specified"}
+- Industry: ${companyContext.industry ? industryLabels[companyContext.industry] || companyContext.industry : "Not specified"}
+- Work model: ${companyContext.workModel ? workModelLabels[companyContext.workModel] || companyContext.workModel : "Not specified"}
+- Location: ${companyContext.location || "Not specified"}
+- Hiring timeline: ${companyContext.hiringTimeline ? timelineLabels[companyContext.hiringTimeline] || companyContext.hiringTimeline : "Not specified"}
+${companyContext.strategicInitiatives ? `- Key strategic initiatives: ${companyContext.strategicInitiatives}` : ""}
 
 ## Operational Pain Areas
 ${painList || "None specified"}
 
 ## Founder Free-Text Responses
+
+### What is your startup about?
+${freeText.startupDescription}
+
+### What problem is your company trying to solve?
+${freeText.problemSolving}
+
+### What's your vision for the company?
+${freeText.companyVision}
 
 ### Describe your typical week
 ${freeText.typicalWeek}
@@ -93,4 +131,9 @@ Analyze this founder's context and return a JSON object with exactly these keys 
 }`;
 }
 
-export const OUTPUT_GENERATION_SYSTEM = `You are an expert at writing Chief of Staff job materials. Generate clear, professional, stage-appropriate content. Be specific and actionable. Avoid generic filler.`;
+export const OUTPUT_GENERATION_SYSTEM = `You are an expert at writing Chief of Staff job materials. Generate clear, professional, stage-appropriate content. Be specific and actionable. Avoid generic filler.
+
+When the founder describes what their startup does, what problem they solve, and their vision—use this to make outputs specific to their business and mission, not generic. When company context includes industry, work model (remote/hybrid/onsite), location, or hiring timeline—use these to tailor the outputs. For example:
+- Job Description: Include work model and location when specified.
+- 90-Day Plan: Adjust pace and milestones based on hiring timeline (urgent vs 6+ months).
+- Candidate Fit: Consider industry experience and location preferences when relevant.`;

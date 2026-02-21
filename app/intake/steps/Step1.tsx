@@ -1,6 +1,6 @@
 "use client";
 
-import type { CompanyContext, Stage, TeamSize, Revenue, BoardComplexity, FounderType } from "@/lib/types";
+import type { CompanyContext, Stage, TeamSize, Revenue, BoardComplexity, FounderType, Industry, WorkModel, HiringTimeline } from "@/lib/types";
 
 interface Step1Props {
   data: CompanyContext;
@@ -43,6 +43,32 @@ const FOUNDER_TYPES: { value: FounderType; label: string }[] = [
   { value: "co-founders", label: "Co-founders" },
   { value: "first-time", label: "First-time founder" },
   { value: "repeat", label: "Repeat founder" },
+];
+
+const INDUSTRIES: { value: Industry; label: string }[] = [
+  { value: "fintech", label: "Fintech" },
+  { value: "healthtech", label: "Healthtech" },
+  { value: "saas", label: "SaaS" },
+  { value: "ecommerce", label: "E-commerce" },
+  { value: "marketplace", label: "Marketplace" },
+  { value: "ai-ml", label: "AI / ML" },
+  { value: "climate", label: "Climate / Clean tech" },
+  { value: "edtech", label: "Edtech" },
+  { value: "proptech", label: "Proptech" },
+  { value: "other", label: "Other" },
+];
+
+const WORK_MODELS: { value: WorkModel; label: string }[] = [
+  { value: "remote", label: "Remote" },
+  { value: "hybrid", label: "Hybrid" },
+  { value: "onsite", label: "On-site" },
+];
+
+const HIRING_TIMELINES: { value: HiringTimeline; label: string }[] = [
+  { value: "urgent", label: "Urgent (ASAP)" },
+  { value: "1-3-months", label: "1–3 months" },
+  { value: "3-6-months", label: "3–6 months" },
+  { value: "6-plus-months", label: "6+ months" },
 ];
 
 function Select({
@@ -114,6 +140,45 @@ export function Step1({ data, onChange }: Step1Props) {
           options={FOUNDER_TYPES}
           onChange={(v) => onChange({ ...data, founderType: v as FounderType })}
         />
+        <Select
+          label="Industry"
+          value={data.industry}
+          options={INDUSTRIES}
+          onChange={(v) => onChange({ ...data, industry: v as Industry })}
+        />
+        <Select
+          label="Work model"
+          value={data.workModel}
+          options={WORK_MODELS}
+          onChange={(v) => onChange({ ...data, workModel: v as WorkModel })}
+        />
+        <Select
+          label="Hiring timeline"
+          value={data.hiringTimeline}
+          options={HIRING_TIMELINES}
+          onChange={(v) => onChange({ ...data, hiringTimeline: v as HiringTimeline })}
+        />
+      </div>
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-[var(--foreground)]">Location (optional)</label>
+        <input
+          type="text"
+          value={data.location}
+          onChange={(e) => onChange({ ...data, location: e.target.value })}
+          placeholder="e.g. Dubai, Riyadh, Remote-first"
+          className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-[var(--foreground)] placeholder-[var(--muted)] focus:border-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--foreground-muted)]/20 transition-colors"
+        />
+      </div>
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-[var(--foreground)]">Key strategic initiatives (optional)</label>
+        <textarea
+          value={data.strategicInitiatives}
+          onChange={(e) => onChange({ ...data, strategicInitiatives: e.target.value })}
+          placeholder="e.g. Series B raise, international expansion, product launch, major hiring push"
+          rows={3}
+          className="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-[var(--foreground)] placeholder-[var(--muted)] focus:border-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--foreground-muted)]/20 transition-colors resize-y"
+        />
+        <p className="text-xs text-[var(--muted)]">What big things is the company working on? This helps tailor the role scope.</p>
       </div>
     </div>
   );
